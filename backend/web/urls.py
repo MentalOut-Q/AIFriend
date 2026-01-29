@@ -11,6 +11,7 @@ from web.views.user.account.refresh_token import RefreshTokenView
 from web.views.user.account.register import RegisterView
 
 urlpatterns = [
+    #加api是为了区分前后端路由, 不然和前端的url冲突了, 会优先用后端的, 你就打不开前端页面了
     path('api/user/account/login/', LoginView.as_view()),
     path('api/user/account/logout/', LogoutView.as_view()),
     path('api/user/account/register/', RegisterView.as_view()),

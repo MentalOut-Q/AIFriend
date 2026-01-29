@@ -3,7 +3,7 @@ import HomepageIndex from "@/views/homepage/HomepageIndex.vue";
 import NotFoundIndex from "@/views/error/NotFoundIndex.vue";
 import FriendIndex from "@/views/friend/FriendIndex.vue";
 import CreateIndex from "@/views/create/CreateIndex.vue";
-import ProfileIndex from "@/views/profile/ProfileIndex.vue";
+import ProfileIndex from "@/views/user/profile/ProfileIndex.vue";
 import LoginIndex from "@/views/user/account/LoginIndex.vue";
 import RegisterIndex from "@/views/user/account/RegisterIndex.vue";
 import SpaceIndex from "@/views/user/space/SpaceIndex.vue";
@@ -27,9 +27,9 @@ const router = createRouter({
       name: 'friend-index'
     },
     {
-      path: '/profile/',
+      path: '/user/profile/',
       component: ProfileIndex,
-      name: 'profile-index'
+      name: 'user-profile-index'
     },
     {
       path: '/user/account/login/',
