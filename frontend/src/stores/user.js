@@ -2,14 +2,19 @@ import {defineStore} from "pinia";
 import {ref} from "vue";
 
 export const useUserStore = defineStore('user', () => {
-    const id = ref()
-    const username = ref(0)
+    const id = ref(0)
+    const username = ref('')
     const photo = ref('')
     const profile = ref('')
     const accessToken = ref('')
+    const hasPulledUserInfo = ref(false)
 
     function isLogin() {
         return !!accessToken.value  // 必须带value!!!!!!!!!不带value永远都不空
+    }
+
+    function setHasPulledUserInfo(newStatus) {
+        hasPulledUserInfo.value = newStatus
     }
 
     function setAccessToken(token) {
@@ -42,5 +47,7 @@ export const useUserStore = defineStore('user', () => {
         setAccessToken,
         setUserInfo,
         logout,
+        hasPulledUserInfo,
+        setHasPulledUserInfo,
     }
 })
