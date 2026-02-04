@@ -10,6 +10,7 @@ from web.views.user.account.logout import LogoutView
 from web.views.user.account.refresh_token import RefreshTokenView
 from web.views.user.account.register import RegisterView
 from web.views.user.account.get_user_info import GetUserInfoView
+from web.views.user.profile.update import UpdateProfileView
 
 urlpatterns = [
     #加api是为了区分前后端路由, 不然和前端的url冲突了, 会优先用后端的, 你就打不开前端页面了
@@ -18,6 +19,7 @@ urlpatterns = [
     path('api/user/account/register/', RegisterView.as_view()),
     path('api/user/account/refresh_token/', RefreshTokenView.as_view()),
     path('api/user/account/get_user_info/', GetUserInfoView.as_view()),
+    path('api/user/profile/update/', UpdateProfileView.as_view()),
 
     path('', index), #如果url是''里的网址(路径), 就会自动调用index这个函数(写在views里的)
     re_path(r'^(?!media/|static/|assets/).*$', index), #兜底路由
