@@ -5,6 +5,7 @@ from rest_framework_simplejwt.views import (
 )
 
 from web.views.create.character.create import CreateCharacterView
+from web.views.create.character.get_list import GetListCharacterView
 from web.views.create.character.get_single import GetSingleCharacterView
 from web.views.create.character.remove import RemoveCharacterView
 from web.views.create.character.update import UpdateCharacterView
@@ -29,6 +30,7 @@ urlpatterns = [
     path('api/create/character/update/', UpdateCharacterView.as_view()),
     path('api/create/character/remove/', RemoveCharacterView.as_view()),
     path('api/create/character/get_single/', GetSingleCharacterView.as_view()),
+    path('api/create/character/get_list/', GetListCharacterView.as_view()),
 
 
     path('', index), #如果url是''里的网址(路径), 就会自动调用index这个函数(写在views里的)
