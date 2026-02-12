@@ -19,9 +19,10 @@ class GetSingleCharacterView(APIView):
                     'profile': character.profile,
                     'photo': character.photo.url,
                     'background_image': character.background_image.url,
+                    'create_time': character.create_time.strftime('%Y-%m-%d'),
                 }
             })
         except:
             return Response({
-                'reuslt': '系统异常，请稍后重试'
+                'result': '系统异常，请稍后重试'
             })
