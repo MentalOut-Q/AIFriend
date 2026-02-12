@@ -1,3 +1,4 @@
+from django.utils.timezone import localtime
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -19,7 +20,7 @@ class GetSingleCharacterView(APIView):
                     'profile': character.profile,
                     'photo': character.photo.url,
                     'background_image': character.background_image.url,
-                    'create_time': character.create_time.strftime('%Y-%m-%d'),
+                    'create_time': localtime(character.create_time).strftime('%Y-%m-%d %H:%M'),
                 }
             })
         except:

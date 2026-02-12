@@ -1,10 +1,10 @@
 from django.contrib.auth.models import User
+from django.utils.timezone import localtime
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from web.models.character import Character
 from web.models.user import UserProfile
-
 
 class GetListCharacterView(APIView):
     def get(self, request):
@@ -25,7 +25,7 @@ class GetListCharacterView(APIView):
                     'profile': character.profile,
                     'photo': character.photo.url,
                     'background_image': character.background_image.url,
-                    'create_time': character.create_time.strftime('%Y-%m-%d'),
+                    'create_time': localtime(character.create_time).strftime('%Y-%m-%d %H:%M'),
                     'author': {
                         'user_id': author.user_id,
                         'username': author.user.username,

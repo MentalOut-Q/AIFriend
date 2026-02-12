@@ -112,10 +112,9 @@ LANGUAGE_CODE = 'en-us'
 
 # 设置成中国时区
 TIME_ZONE = 'Asia/Shanghai'
+USE_TZ = True
 
 USE_I18N = True
-
-USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)

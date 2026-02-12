@@ -1,14 +1,22 @@
+from django.db.models import Q
+from django.utils.timezone import localtime
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from web.models.character import Character
 
-
 class HomepageIndexView(APIView):
     def get(self, request):
         try:
             items_count = int(request.query_params.get('items_count'))
-            characters_raw = Character.objects.all().order_by('-id')[items_count: items_count + 1]
+            search_query = request.query_params.get('search_query', '').strip()
+            if search_query:
+                queryset = Character.objects.filter(
+                    Q(name__icontains=search_query) | Q(profile__icontains=search_query)
+                )
+            else:
+                queryset = Character.objects.all()
+            characters_raw = queryset.order_by('-id')[items_count: items_count + 20]
             characters = []
             for character in characters_raw:
                 author = character.author
@@ -18,6 +26,7 @@ class HomepageIndexView(APIView):
                     'profile': character.profile,
                     'photo': character.photo.url,
                     'background_image': character.background_image.url,
+                    'create_time': localtime(character.create_time).strftime('%Y-%m-%d %H:%M'),
                     'author': {
                         'user_id': author.user_id,
                         'username': author.user.username,
