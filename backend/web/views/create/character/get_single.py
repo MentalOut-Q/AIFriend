@@ -20,7 +20,7 @@ class GetSingleCharacterView(APIView):
                     'profile': character.profile,
                     'photo': character.photo.url,
                     'background_image': character.background_image.url,
-                    'create_time': localtime(character.create_time).strftime('%Y-%m-%d %H:%M'),
+                    'update_time': localtime(character.update_time).strftime('%Y-%m-%d %H:%M'),
                 }
             })
         except:

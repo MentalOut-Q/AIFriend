@@ -25,7 +25,7 @@ class GetListCharacterView(APIView):
                     'profile': character.profile,
                     'photo': character.photo.url,
                     'background_image': character.background_image.url,
-                    'create_time': localtime(character.create_time).strftime('%Y-%m-%d %H:%M'),
+                    'update_time': localtime(character.update_time).strftime('%Y-%m-%d %H:%M'),
                     'author': {
                         'user_id': author.user_id,
                         'username': author.user.username,

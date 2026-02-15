@@ -16,7 +16,7 @@ class HomepageIndexView(APIView):
                 )
             else:
                 queryset = Character.objects.all()
-            characters_raw = queryset.order_by('-id')[items_count: items_count + 20]
+            characters_raw = queryset.order_by('-update_time')[items_count: items_count + 20]
             characters = []
             for character in characters_raw:
                 author = character.author
@@ -26,7 +26,7 @@ class HomepageIndexView(APIView):
                     'profile': character.profile,
                     'photo': character.photo.url,
                     'background_image': character.background_image.url,
-                    'create_time': localtime(character.create_time).strftime('%Y-%m-%d %H:%M'),
+                    'update_time': localtime(character.update_time).strftime('%Y-%m-%d %H:%M'),
                     'author': {
                         'user_id': author.user_id,
                         'username': author.user.username,

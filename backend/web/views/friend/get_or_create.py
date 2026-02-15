@@ -1,3 +1,4 @@
+from django.utils.timezone import localtime
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -24,6 +25,7 @@ class GetOrCreateFriendView(APIView):
                 'result': 'success',
                 'friend': {
                     'id': friend.id,
+                    'update_time': localtime(friend.update_time).strftime('%Y-%m-%d %H:%M'),
                     'character': {
                         'id': character.id,
                         'name': character.name,

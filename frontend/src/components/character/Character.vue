@@ -7,36 +7,62 @@ import api from "@/js/http/api.js";
 import ChatField from "@/components/character/chat_field/ChatField.vue";
 import {useRouter} from "vue-router";
 
-const props = defineProps(['character', 'canEdit'])
+const props = defineProps(['character', 'canEdit', 'canRemoveFriend', 'friendId', 'characterUpdateTime', 'friendUpdateTime'])
 const emit = defineEmits(['remove'])
 const isHover = ref(false)
 const user = useUserStore()
 
 const showDeleteModal = ref(false)
+// 新增：标记当前要删除的类型（'character' 或 'friend'）和对应的ID
+const deleteType = ref('')
+const deleteId = ref('')
 
-// 确认删除逻辑
-async function confirmRemove() {
+// 统一的确认删除逻辑（根据 deleteType 执行不同操作）
+async function confirmDelete() {
   try {
-    const res = await api.post('/api/create/character/remove/', {
-      character_id: props.character.id,
-    })
-    if (res.data.result === 'success') {
-      emit('remove', props.character.id)
+    let res;
+    // 根据删除类型调用不同接口
+    if (deleteType.value === 'character') {
+      res = await api.post('/api/create/character/remove/', {
+        character_id: deleteId.value,
+      })
+    } else if (deleteType.value === 'friend') {
+      res = await api.post('/api/friend/remove/', {
+        friend_id: deleteId.value,
+      })
+    }
+
+    if (res?.data?.result === 'success') {
+      emit('remove', deleteId.value)
     } else {
-      alert(res.data.result || '删除失败')
+      alert(res?.data?.result || '删除失败')
     }
   } catch (err) {
     alert('系统异常，删除失败')
-    console.error('删除角色失败：', err)
+    console.error(`删除${deleteType.value}失败：`, err)
   } finally {
-    // 无论成功失败，关闭弹窗
     showDeleteModal.value = false
+    // 清空标记，避免下次误触发
+    deleteType.value = ''
+    deleteId.value = ''
   }
 }
 
-// 点击删除按钮仅打开弹窗
-function handleRemoveCharacter() {
+// 打开弹窗的通用方法（传入类型和ID）
+function openDeleteModal(type, id) {
+  deleteType.value = type
+  deleteId.value = id
   showDeleteModal.value = true
+}
+
+// 角色删除按钮点击事件
+function handleRemoveCharacter() {
+  openDeleteModal('character', props.character.id)
+}
+
+// 好友删除按钮点击事件
+function handleRemoveFriend() {
+  openDeleteModal('friend', props.friendId)
 }
 
 const chatFieldRef = useTemplateRef('chat-field-ref')
@@ -59,7 +85,7 @@ async function openChatField() {
         chatFieldRef.value.showModal()
       }
     } catch (err) {
-      console.log(err)
+
     }
   }
 }
@@ -74,10 +100,16 @@ async function openChatField() {
         <div class="absolute left-0 top-50 w-60 h-50 bg-linear-to-t from-black/40 to-transparent"></div>
 
         <div v-if="canEdit && character.author.user_id === user.id" class="absolute right-0 top-50">
-          <RouterLink :to="{name: 'update-character', params: {character_id: character.id}}" class="btn btn-circle btn-ghost bg-transparent">
+          <RouterLink @click.stop :to="{name: 'update-character', params: {character_id: character.id}}" class="btn btn-circle btn-ghost bg-transparent">
             <UpdateIcon />
           </RouterLink>
-          <button @click="handleRemoveCharacter" class="btn btn-circle btn-ghost bg-transparent">
+          <button @click.stop="handleRemoveCharacter" class="btn btn-circle btn-ghost bg-transparent">
+            <RemoveIcon />
+          </button>
+        </div>
+
+         <div v-if="canRemoveFriend" class="absolute right-0 top-50">
+          <button @click.stop="handleRemoveFriend" class="btn btn-circle btn-ghost bg-transparent">
             <RemoveIcon />
           </button>
         </div>
@@ -102,22 +134,33 @@ async function openChatField() {
         </div>
       </div>
       <div class="text-sm line-clamp-1 break-all">{{ character.author.username }}</div>
-      <div class="text-sm text-gray-500 ml-auto">
-        {{character.create_time}}
+      <div v-if="characterUpdateTime" class="text-sm text-gray-500 ml-auto">
+        更新于: {{characterUpdateTime}}
+      </div>
+      <div v-if="friendUpdateTime" class="text-sm text-gray-500 ml-auto">
+        聊天于: {{friendUpdateTime}}
       </div>
     </RouterLink>
 
-    <!-- 核心：daisyUI 确认删除弹窗（modal 组件） -->
+    <!-- 复用的删除模态框（根据 deleteType 动态显示提示） -->
     <div v-if="showDeleteModal" class="modal modal-open">
       <div class="modal-box relative max-w-md">
         <h3 class="font-bold text-lg text-red-400">确认删除</h3>
-        <p class="py-4">确定不要{{ character.name }}了吗？</p>
+        <p class="py-4">
+          <!-- 动态提示文案：删除角色/好友的不同话术 -->
+          <template v-if="deleteType === 'character'">
+            确定要删除角色【{{ character.name }}】吗？删除后不可恢复！
+          </template>
+          <template v-else-if="deleteType === 'friend'">
+            确定要移除好友【{{ character.name }}】吗？移除后将无法再和TA聊天！
+          </template>
+        </p>
         <div class="modal-action flex justify-end gap-2">
           <button @click="showDeleteModal = false" class="btn btn-outline">取消</button>
-          <button @click="confirmRemove" class="btn btn-warning">确认</button>
+          <!-- 绑定统一的确认删除方法 -->
+          <button @click="confirmDelete" class="btn btn-warning">确认</button>
         </div>
       </div>
-      <!-- 蒙层（点击可关闭弹窗） -->
       <div class="modal-backdrop" @click="showDeleteModal = false"></div>
     </div>
 

@@ -90,6 +90,7 @@ onBeforeUnmount(() => {
         v-for="character in characters"
         :key="character.id"
         :character="character"
+        :characterUpdateTime="character.update_time"
       />
     </div>
 
