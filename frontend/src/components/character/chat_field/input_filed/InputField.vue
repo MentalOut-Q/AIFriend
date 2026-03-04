@@ -1,11 +1,24 @@
 <script setup>
 import SendIcon from "@/components/character/icons/SendIcon.vue";
 import MicIcon from "@/components/character/icons/MicIcon.vue";
+import {useTemplateRef} from "vue";
+
+const inputRef = useTemplateRef('input-ref')
+
+
+function focus() {
+  inputRef.value.focus()
+}
+
+defineExpose({
+  focus,
+})
 </script>
 
 <template>
   <div class="absolute bottom-4 left-2 h-12 w-86 flex items-center">
     <input
+        ref="input-ref"
         class="input bg-black/30 backdrop-blur-sm text-white text-base w-full h-full rounded-2xl pr-20"
         type="text"
         placeholder="文本输入..."
