@@ -39,6 +39,8 @@ defineExpose({
       <button @click="modalRef.close()" class="btn btn-sm btn-circle btn-ghost bg-transparent absolute right-1 top-1">✕</button>
       <InputField
          ref="input-ref"
+         v-if="friend"
+         :friendId="friend.id"
       />
       <CharacterPhotoField v-if="friend" :character="friend.character" />
     </div>
