@@ -1,8 +1,20 @@
 <script setup lang="ts">
 import Message from "@/components/character/chat_field/chat_history/message/Message.vue";
+import {nextTick, useTemplateRef} from "vue";
 
 const props = defineProps(['history', 'friendId', 'character'])
 
+const scrollRef = useTemplateRef('scroll-ref')
+
+async function scrollToBottom() {
+  await nextTick()
+
+  scrollRef.value.scrollTop = scrollRef.value.scrollHeight
+}
+
+defineExpose({
+  scrollToBottom
+})
 </script>
 
 <template>

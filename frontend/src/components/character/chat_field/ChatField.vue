@@ -8,6 +8,7 @@ const props = defineProps(['friend'])
 const modalRef = useTemplateRef('modal-ref')
 const inputRef = useTemplateRef('input-ref')
 const history = ref([])
+const chatHistoryRef = useTemplateRef('chat-history-ref')
 
 async function showModal() {
   modalRef.value.showModal()
@@ -31,10 +32,12 @@ const modalStyle = computed(() => {
 
 function handlePushBackMessage(msg) {
   history.value.push(msg)
+  chatHistoryRef.value.scrollToBottom()
 }
 
 function handleAddToLastMessage(delta) {
   history.value.at(-1).content += delta
+  chatHistoryRef.value.scrollToBottom()
 }
 
 
@@ -48,6 +51,7 @@ defineExpose({
     <div class="modal-box w-90 h-150" :style="modalStyle">
       <button @click="modalRef.close()" class="btn btn-sm btn-circle btn-ghost bg-transparent absolute right-1 top-1">✕</button>
       <ChatHistory
+          ref="chat-history-ref"
           v-if="friend"
           :history="history"
           :friendId="friend.id"
