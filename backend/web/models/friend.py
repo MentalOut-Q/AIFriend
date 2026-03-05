@@ -4,7 +4,7 @@ from django.utils.timezone import now, localtime
 from web.models.character import Character
 from web.models.user import UserProfile
 
-
+# 朋友关系表
 class Friend(models.Model):
     me = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     character = models.ForeignKey(Character, on_delete=models.CASCADE)
