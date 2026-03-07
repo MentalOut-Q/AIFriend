@@ -3,13 +3,17 @@ from pprint import pprint
 from time import localtime
 from typing import TypedDict, Annotated, Sequence
 
+import lancedb
 from django.utils.timezone import now, localtime
+from langchain_community.vectorstores import LanceDB
 from langchain_core.messages import BaseMessage
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.constants import START, END
 from langgraph.graph import add_messages, StateGraph
 from langgraph.prebuilt import ToolNode
+
+from web.documents.utils.custom_embeddings import CustomEmbeddings
 
 
 class ChatGraph:
@@ -20,19 +24,33 @@ class ChatGraph:
             """当需要查询精确时间时，调用此函数。返回格式为：[年-月-日 时:分:秒]"""
             return localtime(now()).strftime('%Y-%m-%d %H:%M:%S')
 
-        tools = [get_time]
+        @tool
+        def search_knowledge_base(query: str) -> str:
+            """当用户查询阿里云百炼平台的相关信息时，调用此函数。输入为要查询的问题，输出为查询结果。"""
+            db = lancedb.connect('./web/documents/lancedb_storage')
+            embeddings = CustomEmbeddings()
+            vector_db = LanceDB(
+                connection=db,
+                embedding=embeddings,
+                table_name='my_knowledge_base',
+            )
+            docs = vector_db.similarity_search(query, k=3) #在向量数据库里查询3个相近的文档
+            context = '\n\n'.join([f'内容片段：{i + 1}\n{doc.page_content}' for i, doc in enumerate(docs)]) #把上面3个文档拼接一下
+            return f'从知识库中找到以下相关信息：\n\n{context}\n'
+
+        tools = [get_time, search_knowledge_base]
 
         llm = ChatOpenAI(
-            model='deepseek-v3.2',
-            openai_api_key=os.getenv('API_KEY'),
-            openai_api_base=os.getenv('API_BASE'),
-            streaming=True,
-            model_kwargs={
-                "stream_options": {
-                    "include_usage": True,  # 输出token消耗数量
+                model='deepseek-v3.2',
+                openai_api_key=os.getenv('API_KEY'),
+                openai_api_base=os.getenv('API_BASE'),
+                streaming=True,
+                model_kwargs={
+                    "stream_options": {
+                        "include_usage": True,  # 输出token消耗数量
+                    }
                 }
-            }
-        ).bind_tools(tools)
+            ).bind_tools(tools)
 
         class AgentState(TypedDict):
             messages: Annotated[Sequence[BaseMessage], add_messages] #将大模型返回结果追加到输入消息的末尾
