@@ -8,7 +8,7 @@ const inputRef = useTemplateRef('input-ref')
 const props = defineProps(['friendId'])
 const emit = defineEmits(['pushBackMessage', 'addToLastMessage'])
 const message = ref('')
-let isProcessing = false // ai是否正在发消息
+let processId = 0
 
 function focus() {
   inputRef.value.focus()
@@ -19,8 +19,7 @@ async function handleSend() {
   const content = message.value.trim()
   if (!content) return
 
-  if (isProcessing) return
-  isProcessing = true
+  const curId = ++ processId
   message.value = ''
 
   emit('pushBackMessage', {role: 'user', content: content, id: crypto.randomUUID()})
@@ -33,18 +32,16 @@ async function handleSend() {
         message: content,
       },
       onmessage(data, isDone) {
-        if (isDone) {
-          isProcessing = false
-        } else if (data.content) {
+        if (curId !== processId) return
+        
+        if (data.content) {
           emit('addToLastMessage', data.content)
         }
       },
       onerror(err) {
-        isProcessing = false
       },
     })
   } catch (err) {
-    isProcessing = false
   }
 }
 
