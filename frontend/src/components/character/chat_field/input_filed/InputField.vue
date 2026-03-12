@@ -17,8 +17,13 @@ function focus() {
 }
 
 // 将HTTP请求修改成SSE请求
-async function handleSend() {
-  const content = message.value.trim()
+async function handleSend(event, audio_msg) {
+  let content
+  if (audio_msg) {
+    content = audio_msg.trim()
+  } else {
+    content = message.value.trim()
+  }
   if (!content) return
 
   const curId = ++ processId
@@ -52,6 +57,9 @@ function close() {
   showMic.value = false
 }
 
+function handleStop() {
+  ++ processId
+}
 
 defineExpose({
   focus,
@@ -79,7 +87,7 @@ defineExpose({
       v-else
       @close="showMic = false"
       @send="handleSend"
-      @stop="handleSend"
+      @stop="handleStop"
   />
 </template>
 
