@@ -16,11 +16,11 @@ function focus() {
 
 // 将HTTP请求修改成SSE请求
 async function handleSend() {
-  if (isProcessing) return
-  isProcessing = true
-
   const content = message.value.trim()
   if (!content) return
+
+  if (isProcessing) return
+  isProcessing = true
   message.value = ''
 
   emit('pushBackMessage', {role: 'user', content: content, id: crypto.randomUUID()})
