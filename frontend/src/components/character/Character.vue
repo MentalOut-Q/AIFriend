@@ -138,7 +138,7 @@ async function openChatField() {
         更新于: {{characterUpdateTime}}
       </div>
       <div v-if="friendUpdateTime" class="text-sm text-gray-500 ml-auto">
-        相识于: {{friendUpdateTime}}
+        聊天于: {{friendUpdateTime}}
       </div>
     </RouterLink>
 

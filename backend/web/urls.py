@@ -11,6 +11,7 @@ from web.views.create.character.remove import RemoveCharacterView
 from web.views.create.character.update import UpdateCharacterView
 from web.views.friend.get_list import GetListFriendView
 from web.views.friend.get_or_create import GetOrCreateFriendView
+from web.views.friend.message.asr.asr import ASRView
 from web.views.friend.message.chat.chat import MessageChatView
 from web.views.friend.message.get_history import GetHistoryView
 from web.views.friend.remove import RemoveFriendView
@@ -46,7 +47,7 @@ urlpatterns = [
     path('api/friend/message/chat/', MessageChatView.as_view()),
 
     path('api/friend/message/get_history/', GetHistoryView.as_view()),
-
+    path('api/friend/message/asr/asr/', ASRView.as_view()),
     path('', index), #如果url是''里的网址(路径), 就会自动调用index这个函数(写在views里的)
     re_path(r'^(?!media/|static/|assets/).*$', index), #兜底路由
 ]
