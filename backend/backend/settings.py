@@ -163,3 +163,5 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
 
+import mimetypes
+mimetypes.add_type("application/javascript", ".mjs", True)
