@@ -29,3 +29,4 @@ class Character(models.Model):
 
     def __str__(self):
         return f"{self.author.user.username} - {self.name} - {localtime(self.create_time).strftime('%Y-%m-%d %H:%M:%S')}"
+
