@@ -129,7 +129,6 @@ STATIC_URL = 'static/'
 
 if not DEBUG:
     STATIC_ROOT = BASE_DIR / 'static'  # 生产阶段使用
-
 else:
     STATICFILES_DIRS = [  # 开发阶段使用，生产阶段需要注释掉
         BASE_DIR / 'static',
@@ -138,7 +137,7 @@ else:
 if DEBUG:
     MEDIA_URL = 'http://127.0.0.1:8000/media/'
 else:
-    MEDIA_ROOT = 'https://app7501.acapp.acwing.com.cn/media/'
+    MEDIA_URL = 'https://app7501.acapp.acwing.com.cn/media/'
 
 MEDIA_ROOT = BASE_DIR / 'media'
 
