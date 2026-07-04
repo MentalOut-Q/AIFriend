@@ -35,7 +35,7 @@ function handleSearch() {
   <input id="my-drawer-4" type="checkbox" class="drawer-toggle" />
   <div class="drawer-content">
     <!-- Navbar -->
-    <nav class="navbar w-full bg-base-100 shadow-sm">
+    <nav class="navbar w-full bg-base-100/50 backdrop-blur-lg backdrop-saturate-150 border-b border-base-content/10 sticky top-0 z-50">
       <div class="navbar-start">
         <label for="my-drawer-4" aria-label="open sidebar" class="btn btn-square btn-ghost">
          <MenuIcon/>
