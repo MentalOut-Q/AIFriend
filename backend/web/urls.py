@@ -24,7 +24,13 @@ from web.views.user.account.refresh_token import RefreshTokenView
 from web.views.user.account.register import RegisterView
 from web.views.user.account.get_user_info import GetUserInfoView
 from web.views.user.profile.update import UpdateProfileView
-
+from web.views.post.create import CreatePostView
+from web.views.post.remove import RemovePostView
+from web.views.post.get_list import GetListPostView
+from web.views.post.get_single import GetSinglePostView
+from web.views.post.comment.create import CreateCommentView
+from web.views.post.like.toggle import ToggleLikeView
+from web.views.post.favorite.toggle import ToggleFavoriteView
 urlpatterns = [
     #加api是为了区分前后端路由, 不然和前端的url冲突了, 会优先用后端的, 你就打不开前端页面了
     path('api/user/account/login/', LoginView.as_view()),
@@ -51,5 +57,14 @@ urlpatterns = [
     path('api/friend/message/asr/asr/', ASRView.as_view()),
     path('', index), #如果url是''里的网址(路径), 就会自动调用index这个函数(写在views里的)
     path('api/create/character/voice/get_list/', GetVoiceList.as_view()),
+
+    path('api/post/create/', CreatePostView.as_view()),
+    path('api/post/remove/', RemovePostView.as_view()),
+    path('api/post/get_list/', GetListPostView.as_view()),
+    path('api/post/get_single/', GetSinglePostView.as_view()),
+    path('api/post/comment/create/', CreateCommentView.as_view()),
+    path('api/post/like/toggle/', ToggleLikeView.as_view()),
+    path('api/post/favorite/toggle/', ToggleFavoriteView.as_view()),
+
     re_path(r'^(?!media/|static/|assets/).*$', index), #兜底路由
 ]
