@@ -94,7 +94,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex flex-col items-center mb-12">
-    <UserInfoField :userProfile="userProfile" />
+    <UserInfoField :userProfile="userProfile" mode="character"/>
     <div class="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-9 mt-12 justify-items-center w-full px-9">
       <Character
         v-for="character in characters"

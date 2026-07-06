@@ -96,21 +96,23 @@ async function openChatField() {
   <div>
     <div class="avatar cursor-pointer" @mouseover="isHover=true" @mouseout="isHover=false" @click="openChatField">
       <div class="w-60 h-100 rounded-2xl relative">
-        <img :src="character.background_image" class="transition-transform duration-300" :class="{'scale-120': isHover}" alt="">
+        <img :src="character.background_image" class="transition-transform duration-300" :class="{'scale-120': isHover}"
+             alt="">
         <div class="absolute left-0 top-50 w-60 h-50 bg-linear-to-t from-black/40 to-transparent"></div>
 
         <div v-if="canEdit && character.author.user_id === user.id" class="absolute right-0 top-50">
-          <RouterLink @click.stop :to="{name: 'update-character', params: {character_id: character.id}}" class="btn btn-circle btn-ghost bg-transparent">
-            <UpdateIcon />
+          <RouterLink @click.stop :to="{name: 'update-character', params: {character_id: character.id}}"
+                      class="btn btn-circle btn-ghost bg-transparent">
+            <UpdateIcon/>
           </RouterLink>
           <button @click.stop="handleRemoveCharacter" class="btn btn-circle btn-ghost bg-transparent">
-            <RemoveIcon />
+            <RemoveIcon/>
           </button>
         </div>
 
-         <div v-if="canRemoveFriend" class="absolute right-0 top-50">
+        <div v-if="canRemoveFriend" class="absolute right-0 top-50">
           <button @click.stop="handleRemoveFriend" class="btn btn-circle btn-ghost bg-transparent">
-            <RemoveIcon />
+            <RemoveIcon/>
           </button>
         </div>
 
@@ -127,7 +129,8 @@ async function openChatField() {
         </div>
       </div>
     </div>
-    <RouterLink :to="{name: 'user-space-index', params: {user_id: character.author.user_id}}" class="flex items-center mt-4 gap-2 w-60">
+    <RouterLink :to="{name: 'user-space-index', params: {user_id: character.author.user_id}}"
+                class="flex items-center mt-4 gap-2 w-60">
       <div class="avatar">
         <div class="w-7 rounded-full">
           <img :src="character.author.photo" alt="">
@@ -135,10 +138,10 @@ async function openChatField() {
       </div>
       <div class="text-sm line-clamp-1 break-all">{{ character.author.username }}</div>
       <div v-if="characterUpdateTime" class="text-sm text-gray-500 ml-auto">
-        更新于: {{characterUpdateTime}}
+        更新于: {{ characterUpdateTime }}
       </div>
       <div v-if="friendUpdateTime" class="text-sm text-gray-500 ml-auto">
-        聊天于: {{friendUpdateTime}}
+        聊天于: {{ friendUpdateTime }}
       </div>
     </RouterLink>
 
@@ -164,7 +167,7 @@ async function openChatField() {
       <div class="modal-backdrop" @click="showDeleteModal = false"></div>
     </div>
 
-    <ChatField ref="chat-field-ref" :friend="friend" />
+    <ChatField ref="chat-field-ref" :friend="friend"/>
   </div>
 </template>
 

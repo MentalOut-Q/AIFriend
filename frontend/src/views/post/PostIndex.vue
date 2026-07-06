@@ -202,7 +202,7 @@ watch(() => route.query.user_id, () => {
 <template>
   <div class="flex flex-col items-center mb-12 px-4">
     <!-- 有 user_id 时显示作者信息 + 标题 -->
-    <UserInfoField v-if="userProfile" :userProfile="userProfile"/>
+    <UserInfoField v-if="userProfile" :userProfile="userProfile" mode="post"/>
     <h2 v-if="route.query.user_id" class="text-xl font-bold mt-4 w-full max-w-2xl">
       {{ Number(route.query.user_id) === user.id ? '我的动态' : 'TA 的动态' }}
     </h2>
