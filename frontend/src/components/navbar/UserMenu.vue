@@ -1,10 +1,11 @@
 <script setup>
 import {useUserStore} from "@/stores/user.js";
-import UserSpaceIndex from "@/components/navbar/icons/UserSpaceIndex.vue";
 import UserProfileIcon from "@/components/navbar/icons/UserProfileIcon.vue";
 import UserLogoutIcon from "@/components/navbar/icons/UserLogoutIcon.vue";
 import api from "@/js/http/api.js";
 import {useRouter} from "vue-router";
+import UserSpaceIcon from "@/components/navbar/icons/UserSpaceIcon.vue";
+import UserCharacter from "@/components/navbar/icons/UserCharacter.vue";
 
 const user = useUserStore()
 const router = useRouter()
@@ -50,8 +51,14 @@ async function handleLogout() {
       </li>
       <li>
         <RouterLink @click="closeMenu" :to="{name: 'user-space-index', params: {user_id: user.id}}" class="text-sm font-bold py-3">
-          <UserSpaceIndex />
-          个人空间
+          <UserCharacter />
+          我的角色
+        </RouterLink>
+      </li>
+      <li>
+        <RouterLink @click="closeMenu" :to="{name: 'post-index', query: {user_id: user.id}}" class="text-sm font-bold py-3">
+          <UserSpaceIcon />
+          我的动态
         </RouterLink>
       </li>
       <li>

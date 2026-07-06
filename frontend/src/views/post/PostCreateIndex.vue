@@ -33,9 +33,8 @@ async function handlePublish() {
     const data = res.data
     if (data.result === 'success') {
       await router.push({
-        name: 'user-space-index',
-        params: {user_id: user.id},
-        query: {tab: 'posts'},
+        name: 'post-index',
+        query: { user_id: user.id },
       })
     } else {
       errorMessage.value = data.result
@@ -44,6 +43,7 @@ async function handlePublish() {
     errorMessage.value = '发布失败，请稍后重试'
   }
 }
+
 </script>
 
 <template>

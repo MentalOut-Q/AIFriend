@@ -1,8 +1,10 @@
 <script setup>
-import {nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef} from "vue";
-import {useRouter} from "vue-router";
+import {nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch} from "vue";
+import {useRoute, useRouter} from "vue-router";
 import {useUserStore} from "@/stores/user.js";
 import api from "@/js/http/api.js";
+
+import UserInfoField from "@/views/user/space/components/UserInfoField.vue";
 
 const posts = ref([])
 const isLoading = ref(false)
@@ -30,14 +32,20 @@ async function loadMore() {
 
   let newPosts = []
   try {
-    const res = await api.get('/api/post/get_list/', {
-      params: {
-        items_count: posts.value.length,
-      }
-    })
+    const params = {
+      items_count: posts.value.length,
+    }
+    // 如果带用户id的话就是只查看该用户的所有动态
+    if (route.query.user_id) {
+      params.user_id = route.query.user_id
+    }
+    const res = await api.get('/api/post/get_list/', {params})
     const data = res.data
     if (data.result === 'success') {
       newPosts = data.posts
+      if (data.user_profile) {
+        userProfile.value = data.user_profile
+      }
     }
   } catch (err) {
   } finally {
@@ -68,7 +76,8 @@ async function toggleLike(post) {
       post.is_liked = res.data.is_liked
       post.like_count = res.data.like_count
     }
-  } catch (err) {}
+  } catch (err) {
+  }
 }
 
 async function toggleFavorite(post) {
@@ -79,7 +88,8 @@ async function toggleFavorite(post) {
       post.is_favorited = res.data.is_favorited
       post.favorite_count = res.data.favorite_count
     }
-  } catch (err) {}
+  } catch (err) {
+  }
 }
 
 function clearCommentImage() {
@@ -150,19 +160,20 @@ async function handleRemove(post) {
     } else {
       alert(res.data.result)
     }
-  } catch (err) {}
+  } catch (err) {
+  }
 }
 
 let observer = null
 onMounted(async () => {
   await loadMore()
   observer = new IntersectionObserver(
-    entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) loadMore()
-      })
-    },
-    {root: null, rootMargin: '2px', threshold: 0}
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) loadMore()
+        })
+      },
+      {root: null, rootMargin: '2px', threshold: 0}
   )
   observer.observe(sentinelRef.value)
 })
@@ -171,22 +182,42 @@ onBeforeUnmount(() => {
   observer?.disconnect()
   clearCommentImage()
 })
+
+const route = useRoute()
+const userProfile = ref(null)
+
+function reset() {
+  posts.value = []
+  userProfile.value = null
+  isLoading.value = false
+  hasPosts.value = true
+  loadMore()
+}
+
+watch(() => route.query.user_id, () => {
+  reset()
+})
 </script>
 
 <template>
   <div class="flex flex-col items-center mb-12 px-4">
+    <!-- 有 user_id 时显示作者信息 + 标题 -->
+    <UserInfoField v-if="userProfile" :userProfile="userProfile"/>
+    <h2 v-if="route.query.user_id" class="text-xl font-bold mt-4 w-full max-w-2xl">
+      {{ Number(route.query.user_id) === user.id ? '我的动态' : 'TA 的动态' }}
+    </h2>
     <div class="w-full max-w-2xl flex flex-col gap-6 mt-12">
       <div
-        v-for="post in posts"
-        :key="post.id"
-        class="card bg-base-200/80 backdrop-blur-sm shadow-sm"
+          v-for="post in posts"
+          :key="post.id"
+          class="card bg-base-200/80 backdrop-blur-sm shadow-sm"
       >
         <div class="card-body">
           <!-- 作者 -->
           <div class="flex items-center gap-3">
             <RouterLink
-              :to="{name: 'user-space-index', params: {user_id: post.author.user_id}}"
-              class="avatar"
+                :to="{name: 'post-index', query: {user_id: post.author.user_id}}"
+                class="avatar"
             >
               <div class="w-10 rounded-full">
                 <img :src="post.author.photo" alt="">
@@ -194,18 +225,18 @@ onBeforeUnmount(() => {
             </RouterLink>
             <div class="flex flex-col min-w-0">
               <RouterLink
-                :to="{name: 'user-space-index', params: {user_id: post.author.user_id}}"
-                class="font-bold line-clamp-1 break-all hover:underline"
+                  :to="{name: 'user-space-index', params: {user_id: post.author.user_id}}"
+                  class="font-bold line-clamp-1 break-all hover:underline"
               >
                 {{ post.author.username }}
               </RouterLink>
               <span class="text-xs text-gray-500">{{ post.create_time }}</span>
             </div>
             <button
-              v-if="user.isLogin() && post.author.user_id === user.id"
-              @click="handleRemove(post)"
-              type="button"
-              class="btn btn-ghost btn-sm ml-auto"
+                v-if="user.isLogin() && post.author.user_id === user.id"
+                @click="handleRemove(post)"
+                type="button"
+                class="btn btn-ghost btn-sm ml-auto"
             >
               删除
             </button>
@@ -216,27 +247,27 @@ onBeforeUnmount(() => {
 
           <!-- 图片 -->
           <img
-            v-if="post.image"
-            :src="post.image"
-            class="mt-3 rounded-xl w-full max-h-96 object-contain bg-base-300/30"
-            alt=""
+              v-if="post.image"
+              :src="post.image"
+              class="mt-3 rounded-xl w-full max-h-96 object-contain bg-base-300/30"
+              alt=""
           >
 
           <!-- 互动 -->
           <div class="flex flex-wrap gap-2 mt-3">
             <button
-              @click="toggleLike(post)"
-              type="button"
-              class="btn btn-ghost btn-sm"
-              :class="{'text-error': post.is_liked}"
+                @click="toggleLike(post)"
+                type="button"
+                class="btn btn-ghost btn-sm"
+                :class="{'text-error': post.is_liked}"
             >
               {{ post.is_liked ? '已赞' : '点赞' }} {{ post.like_count }}
             </button>
             <button
-              @click="toggleFavorite(post)"
-              type="button"
-              class="btn btn-ghost btn-sm"
-              :class="{'text-warning': post.is_favorited}"
+                @click="toggleFavorite(post)"
+                type="button"
+                class="btn btn-ghost btn-sm"
+                :class="{'text-warning': post.is_favorited}"
             >
               {{ post.is_favorited ? '已藏' : '收藏' }} {{ post.favorite_count }}
             </button>
@@ -260,18 +291,18 @@ onBeforeUnmount(() => {
       <h3 class="font-bold text-lg mb-4">发表评论</h3>
 
       <textarea
-        v-model="commentContent"
-        rows="4"
-        class="textarea w-full"
-        placeholder="写下你的评论..."
+          v-model="commentContent"
+          rows="4"
+          class="textarea w-full"
+          placeholder="写下你的评论..."
       />
 
       <div class="mt-4">
         <img
-          v-if="commentImagePreview"
-          :src="commentImagePreview"
-          class="rounded-lg w-full max-h-48 object-contain bg-base-300/30"
-          alt=""
+            v-if="commentImagePreview"
+            :src="commentImagePreview"
+            class="rounded-lg w-full max-h-48 object-contain bg-base-300/30"
+            alt=""
         >
         <div class="flex gap-2 mt-2">
           <label class="btn btn-sm btn-outline cursor-pointer">
@@ -279,10 +310,10 @@ onBeforeUnmount(() => {
             <input type="file" accept="image/*" class="hidden" @change="onCommentImageChange">
           </label>
           <button
-            v-if="commentImagePreview"
-            @click="clearCommentImage"
-            type="button"
-            class="btn btn-sm btn-ghost"
+              v-if="commentImagePreview"
+              @click="clearCommentImage"
+              type="button"
+              class="btn btn-sm btn-ghost"
           >
             移除图片
           </button>
