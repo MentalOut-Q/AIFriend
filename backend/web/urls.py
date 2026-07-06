@@ -31,6 +31,7 @@ from web.views.post.get_single import GetSinglePostView
 from web.views.post.comment.create import CreateCommentView
 from web.views.post.like.toggle import ToggleLikeView
 from web.views.post.favorite.toggle import ToggleFavoriteView
+from web.views.post.update import UpdatePostView
 urlpatterns = [
     #加api是为了区分前后端路由, 不然和前端的url冲突了, 会优先用后端的, 你就打不开前端页面了
     path('api/user/account/login/', LoginView.as_view()),
@@ -66,5 +67,6 @@ urlpatterns = [
     path('api/post/like/toggle/', ToggleLikeView.as_view()),
     path('api/post/favorite/toggle/', ToggleFavoriteView.as_view()),
 
+    path('api/post/update/', UpdatePostView.as_view()),
     re_path(r'^(?!media/|static/|assets/).*$', index), #兜底路由
 ]

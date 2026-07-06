@@ -5,6 +5,11 @@ import {useUserStore} from "@/stores/user.js";
 import api from "@/js/http/api.js";
 
 import UserInfoField from "@/views/user/space/components/UserInfoField.vue";
+import ChooseIcon from "@/views/post/icons/ChooseIcon.vue";
+
+import LikeIcon from "@/views/post/icons/LikeIcon.vue";
+import FavoriteIcon from "@/views/post/icons/FavoriteIcon.vue";
+import CommentIcon from "@/views/post/icons/CommentIcon.vue";
 
 const posts = ref([])
 const isLoading = ref(false)
@@ -19,6 +24,37 @@ const commentImagePreview = ref('')
 
 const user = useUserStore()
 const router = useRouter()
+
+const expandedPostId = ref(null)
+const currentComments = ref([])
+const commentsLoading = ref(false)
+
+async function loadComments(postId) {
+  commentsLoading.value = true
+  try {
+    const res = await api.get('/api/post/get_single/', {
+      params: {post_id: postId},
+    })
+    if (res.data.result === 'success') {
+      currentComments.value = res.data.post.comments
+    }
+  } catch (err) {
+  } finally {
+    commentsLoading.value = false
+  }
+}
+
+async function toggleComments(post) {
+  // 再次点击同一条 → 收起
+  if (expandedPostId.value === post.id) {
+    expandedPostId.value = null
+    currentComments.value = []
+    return
+  }
+
+  expandedPostId.value = post.id
+  await loadComments(post.id)
+}
 
 function checkSentinelVisible() {
   if (!sentinelRef.value) return false
@@ -141,6 +177,10 @@ async function submitComment() {
       const post = posts.value.find(p => p.id === commentPostId.value)
       if (post) post.comment_count += 1
       commentModalRef.value.close()
+
+      if (expandedPostId.value === commentPostId.value) {
+        await loadComments(commentPostId.value)
+      }
     } else {
       alert(res.data.result)
     }
@@ -181,6 +221,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   observer?.disconnect()
   clearCommentImage()
+  clearEditImage()
 })
 
 const route = useRoute()
@@ -197,6 +238,89 @@ function reset() {
 watch(() => route.query.user_id, () => {
   reset()
 })
+
+function closeMenu() {
+  const element = document.activeElement
+  if (element && element instanceof HTMLElement) element.blur()
+}
+
+
+const editModalRef = useTemplateRef('edit-modal-ref')
+const editPostId = ref(null)
+const editContent = ref('')
+const editImagePreview = ref('')
+const editImageFile = ref(null)
+const editRemoveImage = ref(false)
+
+function clearEditImage() {
+  if (editImagePreview.value.startsWith('blob:')) {
+    URL.revokeObjectURL(editImagePreview.value)
+  }
+  editImagePreview.value = ''
+  editImageFile.value = null
+}
+
+function openEditModal(post) {
+  closeMenu()
+  editPostId.value = post.id
+  editContent.value = post.content
+  editImagePreview.value = post.image || ''
+  editImageFile.value = null
+  editRemoveImage.value = false
+  editModalRef.value.showModal()
+}
+
+function onEditImageChange(e) {
+  const file = e.target.files[0]
+  e.target.value = ''
+  if (!file) return
+
+  if (editImagePreview.value.startsWith('blob:')) {
+    URL.revokeObjectURL(editImagePreview.value)
+  }
+
+  editImageFile.value = file
+  editImagePreview.value = URL.createObjectURL(file)
+  editRemoveImage.value = false
+}
+
+function removeEditImage() {
+  clearEditImage()
+  editRemoveImage.value = true
+}
+
+async function submitEdit() {
+  const content = editContent.value.trim()
+  const post = posts.value.find(p => p.id === editPostId.value)
+  const willHaveImage = !!editImageFile.value || (!!post?.image && !editRemoveImage.value)
+
+  if (!content && !willHaveImage) {
+    alert('内容和图片不能同时为空')
+    return
+  }
+
+  const formData = new FormData()
+  formData.append('post_id', editPostId.value)
+  formData.append('content', content)
+  if (editImageFile.value) {
+    formData.append('image', editImageFile.value)
+  } else if (editRemoveImage.value) {
+    formData.append('remove_image', 'true')
+  }
+
+  try {
+    const res = await api.post('/api/post/update/', formData)
+    if (res.data.result === 'success' && post) {
+      post.content = res.data.content
+      post.image = res.data.image
+      editModalRef.value.close()
+    } else {
+      alert(res.data.result)
+    }
+  } catch (err) {
+    alert('修改失败，请稍后重试')
+  }
+}
 </script>
 
 <template>
@@ -232,14 +356,25 @@ watch(() => route.query.user_id, () => {
               </RouterLink>
               <span class="text-xs text-gray-500">{{ post.create_time }}</span>
             </div>
-            <button
+
+            <div
                 v-if="user.isLogin() && post.author.user_id === user.id"
-                @click="handleRemove(post)"
-                type="button"
-                class="btn btn-ghost btn-sm ml-auto"
+                class="dropdown dropdown-end ml-auto"
             >
-              删除
-            </button>
+              <ChooseIcon/>
+              <!-- 展开菜单 -->
+              <ul
+                  tabindex="0"
+                  class="dropdown-content menu bg-base-100 rounded-box z-20 w-36 p-2 shadow-lg"
+              >
+                <li>
+                  <a @click="closeMenu(); openEditModal(post)">更改</a>
+                </li>
+                <li>
+                  <a @click="closeMenu(); handleRemove(post)" class="text-error">删除</a>
+                </li>
+              </ul>
+            </div>
           </div>
 
           <!-- 正文 -->
@@ -254,25 +389,105 @@ watch(() => route.query.user_id, () => {
           >
 
           <!-- 互动 -->
-          <div class="flex flex-wrap gap-2 mt-3">
+          <div class="flex items-center gap-1 mt-3">
             <button
                 @click="toggleLike(post)"
                 type="button"
-                class="btn btn-ghost btn-sm"
+                class="btn btn-ghost btn-sm gap-1"
                 :class="{'text-error': post.is_liked}"
             >
-              {{ post.is_liked ? '已赞' : '点赞' }} {{ post.like_count }}
+              <LikeIcon/>
+              <span class="text-sm">{{ post.like_count }}</span>
             </button>
+
             <button
                 @click="toggleFavorite(post)"
                 type="button"
-                class="btn btn-ghost btn-sm"
+                class="btn btn-ghost btn-sm gap-1"
                 :class="{'text-warning': post.is_favorited}"
             >
-              {{ post.is_favorited ? '已藏' : '收藏' }} {{ post.favorite_count }}
+              <FavoriteIcon/>
+              <span class="text-sm">{{ post.favorite_count }}</span>
             </button>
-            <button @click="openCommentModal(post)" type="button" class="btn btn-ghost btn-sm">
-              评论 {{ post.comment_count }}
+
+            <button
+                @click="toggleComments(post)"
+                type="button"
+                class="btn btn-ghost btn-sm gap-1"
+                :class="{'text-primary': expandedPostId === post.id}"
+            >
+              <CommentIcon/>
+              <span class="text-sm">{{ post.comment_count }}</span>
+            </button>
+          </div>
+
+          <!-- 评论列表 -->
+          <div
+              v-if="expandedPostId === post.id"
+              class="w-full mt-4 pt-4 border-t border-base-content/10"
+          >
+            <div v-if="commentsLoading" class="text-sm text-gray-500">
+              评论加载中...
+            </div>
+
+            <div v-else-if="currentComments.length === 0" class="text-sm text-gray-500">
+              暂无评论
+            </div>
+
+            <div
+                v-for="comment in currentComments"
+                :key="comment.id"
+                class="flex items-start gap-3 mb-4 w-full"
+            >
+              <!-- 左侧：小圆头像 -->
+              <RouterLink
+                  :to="{ name: 'user-space-index', params: { user_id: comment.author.user_id } }"
+                  class="shrink-0 self-start"
+              >
+                <div class="avatar">
+                  <div class="w-8 h-8 rounded-full overflow-hidden">
+                    <img
+                        :src="comment.author.photo"
+                        alt=""
+                        class="w-full h-full object-cover"
+                    >
+                  </div>
+                </div>
+              </RouterLink>
+
+              <!-- 右侧：用户名+时间在上，正文和图片在时间下面 -->
+              <div class="flex flex-col items-start min-w-0 flex-1">
+                <div class="flex items-center gap-2 w-full">
+                  <span class="font-bold text-sm line-clamp-1 break-all">
+                    {{ comment.author.username }}
+                  </span>
+                  <span class="text-xs text-gray-500 shrink-0">
+                    {{ comment.create_time }}
+                  </span>
+                </div>
+
+                <p
+                    v-if="comment.content"
+                    class="text-sm whitespace-pre-wrap break-all mt-1 text-left w-full"
+                >
+                  {{ comment.content }}
+                </p>
+
+                <img
+                    v-if="comment.image"
+                    :src="comment.image"
+                    class="mt-2 rounded-lg max-h-48 max-w-full w-auto block"
+                    alt=""
+                >
+              </div>
+            </div>
+
+            <button
+                @click="openCommentModal(post)"
+                type="button"
+                class="btn btn-sm btn-outline"
+            >
+              写评论
             </button>
           </div>
         </div>
@@ -285,7 +500,7 @@ watch(() => route.query.user_id, () => {
     <div v-else-if="!hasPosts" class="text-gray-500 mt-4">没有更多了</div>
   </div>
 
-  <!-- 评论弹窗：文字 + 可选图片，无裁剪 -->
+  <!-- 评论弹窗：文字 + 可选图片 -->
   <dialog ref="comment-modal-ref" class="modal">
     <div class="modal-box">
       <h3 class="font-bold text-lg mb-4">发表评论</h3>
@@ -325,6 +540,52 @@ watch(() => route.query.user_id, () => {
           <button type="button" class="btn">取消</button>
         </form>
         <button @click="submitComment" type="button" class="btn btn-neutral">发送</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+
+  <dialog ref="edit-modal-ref" class="modal">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg mb-4">编辑动态</h3>
+
+      <textarea
+          v-model="editContent"
+          rows="4"
+          class="textarea w-full"
+          placeholder="修改内容..."
+      />
+
+      <div class="mt-4">
+        <img
+            v-if="editImagePreview"
+            :src="editImagePreview"
+            class="rounded-lg w-full max-h-48 object-contain bg-base-300/30"
+            alt=""
+        >
+        <div class="flex gap-2 mt-2">
+          <label class="btn btn-sm btn-outline cursor-pointer">
+            换图片
+            <input type="file" accept="image/*" class="hidden" @change="onEditImageChange">
+          </label>
+          <button
+              v-if="editImagePreview"
+              @click="removeEditImage"
+              type="button"
+              class="btn btn-sm btn-ghost"
+          >
+            移除图片
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-action">
+        <form method="dialog">
+          <button type="button" class="btn">取消</button>
+        </form>
+        <button @click="submitEdit" type="button" class="btn btn-neutral">保存</button>
       </div>
     </div>
     <form method="dialog" class="modal-backdrop">
