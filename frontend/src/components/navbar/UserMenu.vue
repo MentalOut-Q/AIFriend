@@ -6,6 +6,7 @@ import api from "@/js/http/api.js";
 import {useRouter} from "vue-router";
 import UserSpaceIcon from "@/components/navbar/icons/UserSpaceIcon.vue";
 import UserCharacter from "@/components/navbar/icons/UserCharacter.vue";
+import FavoriteIcon from "@/views/post/icons/FavoriteIcon.vue";
 
 const user = useUserStore()
 const router = useRouter()
@@ -59,6 +60,12 @@ async function handleLogout() {
         <RouterLink @click="closeMenu" :to="{name: 'post-index', query: {user_id: user.id}}" class="text-sm font-bold py-3">
           <UserSpaceIcon />
           我的动态
+        </RouterLink>
+      </li>
+      <li>
+        <RouterLink @click="closeMenu" :to="{name: 'post-index', query: {favorites: 1}}" class="text-sm font-bold py-3">
+          <FavoriteIcon class="w-5 h-5" />
+          我的收藏
         </RouterLink>
       </li>
       <li>

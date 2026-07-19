@@ -71,8 +71,11 @@ async function loadMore() {
     const params = {
       items_count: posts.value.length,
     }
-    // 如果带用户id的话就是只查看该用户的所有动态
-    if (route.query.user_id) {
+    // 我的收藏
+    if (route.query.favorites) {
+      params.favorites = 1
+    } else if (route.query.user_id) {
+      // 只查看该用户的所有动态
       params.user_id = route.query.user_id
     }
     const res = await api.get('/api/post/get_list/', {params})
@@ -123,6 +126,10 @@ async function toggleFavorite(post) {
     if (res.data.result === 'success') {
       post.is_favorited = res.data.is_favorited
       post.favorite_count = res.data.favorite_count
+      // 在「我的收藏」页取消收藏后从列表移除
+      if (route.query.favorites && !post.is_favorited) {
+        posts.value = posts.value.filter(p => p.id !== post.id)
+      }
     }
   } catch (err) {
   }
@@ -235,7 +242,7 @@ function reset() {
   loadMore()
 }
 
-watch(() => route.query.user_id, () => {
+watch(() => [route.query.user_id, route.query.favorites], () => {
   reset()
 })
 
@@ -344,8 +351,11 @@ async function submitEdit() {
 <template>
   <div class="flex flex-col items-center mb-12 px-4">
     <!-- 有 user_id 时显示作者信息 + 标题 -->
-    <UserInfoField v-if="userProfile" :userProfile="userProfile" mode="post"/>
-    <h2 v-if="route.query.user_id" class="text-xl font-bold mt-4 w-full max-w-2xl">
+    <UserInfoField v-if="userProfile && !route.query.favorites" :userProfile="userProfile" mode="post"/>
+    <h2 v-if="route.query.favorites" class="text-xl font-bold mt-4 w-full max-w-2xl">
+      我的收藏
+    </h2>
+    <h2 v-else-if="route.query.user_id" class="text-xl font-bold mt-4 w-full max-w-2xl">
       {{ Number(route.query.user_id) === user.id ? '我的动态' : 'TA 的动态' }}
     </h2>
     <div class="w-full max-w-2xl flex flex-col gap-6 mt-12">
@@ -516,7 +526,9 @@ async function submitEdit() {
 
     <div ref="sentinel-ref" class="h-2 mt-8"></div>
     <div v-if="isLoading" class="text-gray-500 mt-4">加载中...</div>
-    <div v-else-if="!hasPosts && posts.length === 0" class="text-gray-500 mt-4">还没有动态，去发一条吧</div>
+    <div v-else-if="!hasPosts && posts.length === 0" class="text-gray-500 mt-4">
+      {{ route.query.favorites ? '还没有收藏的动态' : '还没有动态，去发一条吧' }}
+    </div>
     <div v-else-if="!hasPosts" class="text-gray-500 mt-4">没有更多了</div>
   </div>
 
