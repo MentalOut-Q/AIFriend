@@ -252,6 +252,24 @@ const editImagePreview = ref('')
 const editImageFile = ref(null)
 const editRemoveImage = ref(false)
 
+const imagePreviewModalRef = useTemplateRef('image-preview-modal-ref')
+const previewImageUrl = ref('')
+const previewScale = ref(1)
+
+function openImagePreview(url) {
+  if (!url) return
+  previewImageUrl.value = url
+  previewScale.value = 1
+  imagePreviewModalRef.value.showModal()
+}
+
+function onPreviewWheel(e) {
+  e.preventDefault()
+  const delta = e.deltaY > 0 ? -0.1 : 0.1
+  const next = previewScale.value + delta
+  previewScale.value = Math.min(5, Math.max(0.5, Number(next.toFixed(2))))
+}
+
 function clearEditImage() {
   if (editImagePreview.value.startsWith('blob:')) {
     URL.revokeObjectURL(editImagePreview.value)
@@ -384,7 +402,8 @@ async function submitEdit() {
           <img
               v-if="post.image"
               :src="post.image"
-              class="mt-3 rounded-xl w-full max-h-96 object-contain bg-base-300/30"
+              @click="openImagePreview(post.image)"
+              class="mt-3 rounded-xl w-full max-h-96 object-contain bg-base-300/30 cursor-pointer"
               alt=""
           >
 
@@ -476,7 +495,8 @@ async function submitEdit() {
                 <img
                     v-if="comment.image"
                     :src="comment.image"
-                    class="mt-2 rounded-lg max-h-48 max-w-full w-auto block"
+                    @click="openImagePreview(comment.image)"
+                    class="mt-2 rounded-lg max-h-48 max-w-full w-auto block cursor-pointer"
                     alt=""
                 >
               </div>
@@ -587,6 +607,31 @@ async function submitEdit() {
         </form>
         <button @click="submitEdit" type="button" class="btn btn-neutral">保存</button>
       </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+
+  <dialog ref="image-preview-modal-ref" class="modal">
+    <div
+        class="modal-box max-w-5xl w-full h-[90vh] p-2 bg-transparent shadow-none overflow-hidden flex items-center justify-center"
+        @wheel="onPreviewWheel"
+    >
+      <button
+          @click="imagePreviewModalRef.close()"
+          type="button"
+          class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 z-10 bg-base-100"
+      >
+        ✕
+      </button>
+      <img
+          :src="previewImageUrl"
+          :style="{ transform: `scale(${previewScale})` }"
+          class="max-w-full max-h-[85vh] object-contain rounded-lg transition-transform duration-100 origin-center select-none"
+          draggable="false"
+          alt=""
+      >
     </div>
     <form method="dialog" class="modal-backdrop">
       <button>close</button>

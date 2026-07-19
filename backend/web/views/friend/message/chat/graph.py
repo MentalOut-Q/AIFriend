@@ -38,7 +38,47 @@ class ChatGraph:
             context = '\n\n'.join([f'内容片段：{i + 1}\n{doc.page_content}' for i, doc in enumerate(docs)]) #把上面3个文档拼接一下
             return f'从知识库中找到以下相关信息：\n\n{context}\n'
 
-        tools = [get_time, search_knowledge_base]
+        import requests  # 文件顶部 import
+
+        @tool
+        def get_weather(city: str) -> str:
+            """当用户询问某地天气、气温、是否下雨时，调用此函数。
+            输入为城市名（中文或英文，如：北京、Shanghai），输出为简要天气描述。
+            """
+            # 1) 城市名 → 经纬度
+            geo = requests.get(
+                'https://geocoding-api.open-meteo.com/v1/search',
+                params={'name': city, 'count': 1, 'language': 'zh'},
+                timeout=10,
+            ).json()
+            if not geo.get('results'):
+                return f'未找到城市：{city}'
+
+            place = geo['results'][0]
+            lat, lon = place['latitude'], place['longitude']
+            name = place.get('name', city)
+
+            # 2) 查当前天气
+            weather = requests.get(
+                'https://api.open-meteo.com/v1/forecast',
+                params={
+                    'latitude': lat,
+                    'longitude': lon,
+                    'current': 'temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m',
+                    'timezone': 'Asia/Shanghai',
+                },
+                timeout=10,
+            ).json()
+            cur = weather.get('current', {})
+            return (
+                f'{name}当前天气：'
+                f'气温 {cur.get("temperature_2m")}°C，'
+                f'湿度 {cur.get("relative_humidity_2m")}%，'
+                f'风速 {cur.get("wind_speed_10m")} km/h，'
+                f'天气代码 {cur.get("weather_code")}'
+            )
+
+        tools = [get_time, search_knowledge_base, get_weather]
 
         llm = ChatOpenAI(
                 model='deepseek-v3.2',

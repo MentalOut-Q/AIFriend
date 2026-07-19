@@ -1034,3 +1034,120 @@ stolen refresh 被用过一次后，原来的就失效，更安全。
 
 U3 编辑资料, 编辑角色模块
 
+
+
+U4流式布局
+
+### 1. 前端：哨兵 + IntersectionObserver
+
+以 `HomepageIndex.vue` 为例：
+
+```js
+async function loadMore() {
+  if (isLoading.value || !hasCharacters.value) return
+  isLoading.value = true
+  // ...
+  const res = await api.get('/api/homepage/index/', {
+    params: {
+      items_count: characters.value.length,  // 已加载数量 = 偏移量
+      search_query: route.query.q || '',
+    }
+  })
+  // ...
+  if (newCharacters.length === 0) {
+    hasCharacters.value = false   // 没更多了
+  } else {
+    characters.value.push(...newCharacters)  // 追加到列表
+    await nextTick()
+    if (checkSentinelVisible()) {
+      await loadMore()  // 哨兵仍可见 → 继续加载（首屏不够一屏时）
+    }
+  }
+}
+```
+
+
+
+挂载时监听页面底部的「哨兵」元素：
+
+```js
+onMounted(async () => {
+  await loadMore()
+  observer = new IntersectionObserver(
+    entries => { // 遍历每个监听元素, 实际上这里只有sentinelRef.value
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          loadMore()
+        }
+      })
+    },
+    {root: null, rootMargin: '2px', threshold: 0}
+  )
+    
+  // 3. 监听页面底部的哨兵DOM元素 sentinelRef.value
+  observer.observe(sentinelRef.value)
+})
+```
+
+```js
+<script setup>
+const sentinelRef = useTemplateRef('sentinel-ref')
+let observer = null
+
+function checkSentinelVisible() {  // 判断哨兵是否能被看到
+  if (!sentinelRef.value) return false
+
+  const rect = sentinelRef.value.getBoundingClientRect()
+  return rect.top < window.innerHeight && rect.bottom > 0
+}
+
+onMounted(async () => {
+  await loadMore()  // 加载新元素
+
+  observer = new IntersectionObserver(
+    entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          loadMore()
+        }
+      })
+    },
+    {root: null, rootMargin: '2px', threshold: 0}
+  )
+
+  //监听哨兵元素， 每次哨兵被看到时，都会触发一次
+  observer.observe(sentinelRef.value)
+})
+
+onBeforeUnmount(() => {
+  observer?.disconnect()  // 解绑监听器
+})
+</script>
+
+<template>
+...
+<!-- 设置哨兵 -->
+<div ref="sentinel-ref" class="h-2"></div>
+...
+</template>
+```
+
+
+
+模板里列表下方放哨兵：
+
+```js
+<div ref="sentinel-ref" class="h-2 mt-8"></div>
+<div v-if="isLoading" class="text-gray-500 mt-4">加载中...</div>
+<div v-else-if="!hasCharacters" class="text-gray-500 mt-4">没有更多角色了</div>
+```
+
+
+
+​    
+
+![幕截图 2026-07-07 22235](D:\86180\Pictures\Screenshots\屏幕截图 2026-07-07 222355.png)
+
+
+
+### 
