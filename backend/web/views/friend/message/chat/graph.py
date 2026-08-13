@@ -5,6 +5,7 @@ from typing import TypedDict, Annotated, Sequence
 
 import lancedb
 from django.utils.timezone import now, localtime
+import requests
 from langchain_community.vectorstores import LanceDB
 from langchain_core.messages import BaseMessage
 from langchain_core.tools import tool
@@ -18,7 +19,7 @@ from web.documents.utils.custom_embeddings import CustomEmbeddings
 
 class ChatGraph:
     @staticmethod
-    def create_app():
+    def create_app(character_id: int):
         @tool
         def get_time() -> str:
             """当需要查询精确时间时，调用此函数。返回格式为：[年-月-日 时:分:秒]"""
@@ -38,7 +39,6 @@ class ChatGraph:
             context = '\n\n'.join([f'内容片段：{i + 1}\n{doc.page_content}' for i, doc in enumerate(docs)]) #把上面3个文档拼接一下
             return f'从知识库中找到以下相关信息：\n\n{context}\n'
 
-        import requests  # 文件顶部 import
 
         @tool
         def get_weather(city: str) -> str:
@@ -78,7 +78,31 @@ class ChatGraph:
                 f'天气代码 {cur.get("weather_code")}'
             )
 
-        tools = [get_time, search_knowledge_base, get_weather]
+        @tool
+        def search_character_story(query: str) -> str:
+            """当用户询问当前角色的身世、与角色有关的人物、过往、剧情、设定等故事相关内容时，调用此函数。
+            输入为要查询的问题，输出为从角色故事文档中检索到的相关片段。"""
+            db = lancedb.connect('./web/documents/lancedb_storage')
+            embeddings = CustomEmbeddings()
+            table = f'character_{character_id}_kb'
+            vector_db = LanceDB(
+                connection=db,
+                embedding=embeddings,
+                table_name=table,
+            )
+            try:
+                docs = vector_db.similarity_search(query, k=3)
+            except Exception:
+                return '该角色暂无故事资料。'
+            if not docs:
+                return '未找到相关故事片段。'
+            context = '\n\n'.join(
+                f'内容片段：{i + 1}\n{doc.page_content}' for i, doc in enumerate(docs)
+            )
+            return f'从角色故事中找到：\n\n{context}\n'
+        
+
+        tools = [get_time, search_knowledge_base, search_character_story]
 
         llm = ChatOpenAI(
                 model='deepseek-v3.2',

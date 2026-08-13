@@ -22,3 +22,22 @@ def insert_documents():
         mode='overwrite',
     )
     print(f"已插入 {vector_db._table.count_rows()}行数据。")
+
+def insert_character_story(character_id: int, file_path: str):
+    loader = TextLoader(file_path, encoding='utf-8')
+    documents = loader.load()
+    texts = RecursiveCharacterTextSplitter(
+        chunk_size=500, chunk_overlap=50
+    ).split_documents(documents)
+    for t in texts:
+        t.metadata['character_id'] = character_id
+
+    embeddings = CustomEmbeddings()
+    db = lancedb.connect('./web/documents/lancedb_storage')
+    LanceDB.from_documents(
+        documents=texts,
+        embedding=embeddings,
+        connection=db,
+        table_name=f'character_{character_id}_kb',
+        mode='overwrite',
+    )

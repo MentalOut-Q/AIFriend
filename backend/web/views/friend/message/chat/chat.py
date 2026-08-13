@@ -36,6 +36,12 @@ def add_system_prompt(state, friend):
         prompt += sp.prompt
     prompt += f'\n【角色性格】\n{friend.character.profile}\n'
     prompt += f'【长期记忆】\n{friend.memory}\n'
+    prompt += '''
+        【工具使用规则】
+        - 需要查阅角色故事、时间、知识库时，直接调用对应工具，不要先输出任何说明文字。
+        - 禁止说出「我需要查询」「让我查一下」「根据资料」等元话语。
+        - 拿到工具结果后，只用角色身份自然回答，不要提及工具、知识库、文档。
+        '''
     return {'messages': [SystemMessage(prompt)] + msgs}
 
 
@@ -65,7 +71,7 @@ class MessageChatView(APIView):
                 'result': '好友不存在'
             })
         friend = friends.first()
-        app = ChatGraph.create_app()
+        app = ChatGraph.create_app(character_id=friend.character.id)
 
         inputs = {
             'messages': [HumanMessage(message)]

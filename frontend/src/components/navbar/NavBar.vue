@@ -22,12 +22,19 @@ watch(() => route.query.q, newQ => {
 })
 
 function handleSearch() {
-  router.push({
-    name: 'homepage-index',
-    query: {
-      q: searchQuery.value.trim(),
-    }
-  })
+  const q = searchQuery.value.trim()
+  // 在动态相关页面：搜索动态；其它页面：搜索角色（首页）
+  if (route.name === 'post-index' || route.name === 'post-create-index') {
+    router.push({
+      name: 'post-index',
+      query: q ? {q} : {},
+    })
+  } else {
+    router.push({
+      name: 'homepage-index',
+      query: q ? {q} : {},
+    })
+  }
 }
 
 </script>
@@ -47,7 +54,11 @@ function handleSearch() {
         </div>
         <div class="navbar-center w-4/5 max-w-180 flex justify-center">
           <form @submit.prevent="handleSearch" class="join w-4/5 flex justify-center">
-            <input v-model="searchQuery" class="input join-item rounded-l-full w-4/5" placeholder="搜索你感兴趣的内容"/>
+            <input
+                v-model="searchQuery"
+                class="input join-item rounded-l-full w-4/5"
+                :placeholder="route.name === 'post-index' || route.name === 'post-create-index' ? '搜索动态内容或作者' : '搜索你感兴趣的内容'"
+            />
             <button class="btn join-item rounded-r-full gap-1 px-2">
               <!--  gap是调整button元素内间隙大小, px是padding在x方向上的大小        -->
               <SearchIcon/>

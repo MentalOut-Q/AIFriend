@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.db.models import Q
 from django.utils.timezone import localtime
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -13,6 +14,7 @@ class GetListPostView(APIView):
             items_count = int(request.query_params.get('items_count'))
             user_id = request.query_params.get('user_id')
             favorites = str(request.query_params.get('favorites', '')).lower() in ('1', 'true')
+            search_query = request.query_params.get('search_query', '').strip()
 
             queryset = Post.objects.all()
             user_profile_data = None
@@ -42,6 +44,12 @@ class GetListPostView(APIView):
                 queryset = queryset.order_by('-create_time')
             else:
                 queryset = queryset.order_by('-create_time')
+
+            if search_query:
+                queryset = queryset.filter(
+                    Q(content__icontains=search_query) |
+                    Q(author__user__username__icontains=search_query)
+                )
 
             posts_raw = queryset[items_count: items_count + 20]
 

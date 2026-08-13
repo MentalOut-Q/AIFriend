@@ -35,6 +35,9 @@ class Character(models.Model):
     background_image = models.ImageField(upload_to=background_image_upload_to)
     create_time = models.DateTimeField(default=now)
     update_time = models.DateTimeField(default=now)
+    story_file = models.FileField(
+    upload_to='character/stories/',
+    blank=True, null=True) # 角色故事文档
 
     def __str__(self):
         return f"{self.author.user.username} - {self.name} - {localtime(self.create_time).strftime('%Y-%m-%d %H:%M:%S')}"

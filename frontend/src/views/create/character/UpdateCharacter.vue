@@ -9,12 +9,14 @@ import api from "@/js/http/api.js";
 import {useRoute, useRouter} from "vue-router";
 import {useUserStore} from "@/stores/user.js";
 import Voice from "@/views/create/character/components/Voice.vue";
+import StoryFile from "@/views/create/character/components/StoryFile.vue";
 
 const user = useUserStore()
 const router = useRouter()
 const route = useRoute()
 const characterId = route.params.character_id
 const character = ref(null)
+const storyRef = useTemplateRef('story-ref')
 
 const voices = ref([])
 const curVoiceId = ref(null)
@@ -76,6 +78,10 @@ async function handleUpdate() {
     if (backgroundImage !== character.value.background_image) {
       formData.append('background_image', base64ToFile(backgroundImage, 'background_image.png'))
     }
+    const story = storyRef.value?.storyFile
+    if (story) {
+      formData.append('story_file', story)
+    }
 
     try {
       const res = await api.post('/api/create/character/update/', formData)
@@ -106,7 +112,7 @@ async function handleUpdate() {
         <Voice ref="voice-ref" :voices="voices" :curVoiceId="curVoiceId" />
         <Profile ref="profile-ref" :profile="character.profile" />
         <BackgroundImage ref="background-image-ref" :backgroundImage="character.background_image" />
-
+        <StoryFile ref="story-ref" />
         <p v-if="errorMessage" class="text-sm text-red-500">{{ errorMessage }}</p>
 
         <div class="flex justify-center">

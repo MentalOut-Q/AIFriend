@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 
+from web.documents.utils.insert_documents import insert_character_story
 from web.models.character import Character, Voice
 from web.views.utils.photo import remove_old_photo
 
@@ -35,7 +36,12 @@ class UpdateCharacterView(APIView):
                 character.background_image = background_image
 
             voice = Voice.objects.get(id=voice_id)
-
+            story_file = request.FILES.get('story_file', None)
+            if story_file:
+                # 可选：删旧文件
+                character.story_file = story_file
+                character.save()
+                insert_character_story(character.id, character.story_file.path)
             character.name = name
             character.voice = voice
             character.profile = profile

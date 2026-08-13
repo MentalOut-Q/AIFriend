@@ -78,6 +78,9 @@ async function loadMore() {
       // 只查看该用户的所有动态
       params.user_id = route.query.user_id
     }
+    if (route.query.q) {
+      params.search_query = route.query.q
+    }
     const res = await api.get('/api/post/get_list/', {params})
     const data = res.data
     if (data.result === 'success') {
@@ -242,7 +245,7 @@ function reset() {
   loadMore()
 }
 
-watch(() => [route.query.user_id, route.query.favorites], () => {
+watch(() => [route.query.user_id, route.query.favorites, route.query.q], () => {
   reset()
 })
 
@@ -354,6 +357,9 @@ async function submitEdit() {
     <UserInfoField v-if="userProfile && !route.query.favorites" :userProfile="userProfile" mode="post"/>
     <h2 v-if="route.query.favorites" class="text-xl font-bold mt-4 w-full max-w-2xl">
       我的收藏
+    </h2>
+    <h2 v-else-if="route.query.q" class="text-xl font-bold mt-4 w-full max-w-2xl">
+      搜索动态：{{ route.query.q }}
     </h2>
     <h2 v-else-if="route.query.user_id" class="text-xl font-bold mt-4 w-full max-w-2xl">
       {{ Number(route.query.user_id) === user.id ? '我的动态' : 'TA 的动态' }}
@@ -527,7 +533,13 @@ async function submitEdit() {
     <div ref="sentinel-ref" class="h-2 mt-8"></div>
     <div v-if="isLoading" class="text-gray-500 mt-4">加载中...</div>
     <div v-else-if="!hasPosts && posts.length === 0" class="text-gray-500 mt-4">
-      {{ route.query.favorites ? '还没有收藏的动态' : '还没有动态，去发一条吧' }}
+      {{
+        route.query.favorites
+          ? '还没有收藏的动态'
+          : route.query.q
+            ? '没有找到相关动态'
+            : '还没有动态，去发一条吧'
+      }}
     </div>
     <div v-else-if="!hasPosts" class="text-gray-500 mt-4">没有更多了</div>
   </div>

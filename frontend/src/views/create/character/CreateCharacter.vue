@@ -9,6 +9,7 @@ import api from "@/js/http/api.js";
 import {useRouter} from "vue-router";
 import {useUserStore} from "@/stores/user.js";
 import Voice from "@/views/create/character/components/Voice.vue";
+import StoryFile from "@/views/create/character/components/StoryFile.vue";
 
 const user = useUserStore()
 const router = useRouter()
@@ -18,6 +19,7 @@ const nameRef = useTemplateRef('name-ref')
 const voiceRef = useTemplateRef('voice-ref')
 const profileRef = useTemplateRef('profile-ref')
 const backgroundImageRef = useTemplateRef('background-image-ref')
+const storyRef = useTemplateRef('story-ref')
 const errorMessage = ref('')
 
 const voices = ref([])
@@ -62,7 +64,10 @@ async function handleCreate() {
     formData.append('profile', profile)
     formData.append('photo', base64ToFile(photo, 'photo.png'))
     formData.append('background_image', base64ToFile(backgroundImage, 'background_image.png'))
-
+    const story = storyRef.value?.storyFile
+    if (story) {
+      formData.append('story_file', story)
+    }
     try {
       const res = await api.post('/api/create/character/create/', formData)
       const data = res.data
@@ -93,7 +98,7 @@ async function handleCreate() {
         <Voice ref="voice-ref" :voices="voices" :curVoiceId="curVoiceId" />
         <Profile ref="profile-ref" />
         <BackgroundImage ref="background-image-ref" />
-
+        <StoryFile ref="story-ref" />
         <p v-if="errorMessage" class="text-sm text-red-500">{{ errorMessage }}</p>
 
         <div class="flex justify-center">

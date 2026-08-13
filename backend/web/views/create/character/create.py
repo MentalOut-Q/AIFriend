@@ -36,17 +36,24 @@ class CreateCharacterView(APIView):
                 })
 
             voice = Voice.objects.get(id=voice_id)
+            story_file = request.FILES.get('story_file', None)
 
-            Character.objects.create(
+            character = Character.objects.create(
                 author=user_profile,
                 name=name,
                 voice=voice,
                 profile=profile,
                 photo=photo,
                 background_image=background_image,
+                story_file=story_file,  # 有字段时
             )
+            if story_file:
+                # FileField 保存后才有 .path
+                from web.documents.utils.insert_documents import insert_character_story
+                insert_character_story(character.id, character.story_file.path)
             return Response({
                 'result': 'success',
+                'character_id': character.id,  # 建议返回
             })
         except:
             return Response({
