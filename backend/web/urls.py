@@ -10,6 +10,7 @@ from web.views.create.character.get_single import GetSingleCharacterView
 from web.views.create.character.remove import RemoveCharacterView
 from web.views.create.character.update import UpdateCharacterView
 from web.views.create.character.voice.get_list import GetVoiceList
+from web.views.create.character.voice.custom.create_api import CreateCustomVoiceView
 from web.views.friend.get_list import GetListFriendView
 from web.views.friend.get_or_create import GetOrCreateFriendView
 from web.views.friend.message.asr.asr import ASRView
@@ -58,6 +59,7 @@ urlpatterns = [
     path('api/friend/message/asr/asr/', ASRView.as_view()),
     path('', index), #如果url是''里的网址(路径), 就会自动调用index这个函数(写在views里的)
     path('api/create/character/voice/get_list/', GetVoiceList.as_view()),
+    path('api/create/character/voice/custom/create/', CreateCustomVoiceView.as_view()),
 
     path('api/post/create/', CreatePostView.as_view()),
     path('api/post/remove/', RemovePostView.as_view()),

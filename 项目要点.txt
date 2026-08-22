@@ -1,2 +1,12 @@
 jwt验证登录
 IntersectionObserver 交叉观察器监听哨兵元素sentineRef实现的前端流式布局
+
+AIFriend：基于大模型的虚拟角色陪伴与社区互动平台
+技术栈：Vue3、Django REST Framework、LangChain、LangGraph、LanceDB、SimpleJWT、SSE、WebSocket
+
+- 基于 Django REST Framework 设计用户、角色、好友、聊天、帖子等 RESTful API，并实现 JWT 双 Token 认证、HttpOnly Cookie 刷新机制与 Axios 自动续期。
+- 基于 LangGraph 构建角色对话 Agent，将系统提示词、历史对话、长期记忆和工具调用组织为状态图，支持角色化连续对话。
+使用 LangChain 封装大模型、消息、工具和向量检索能力，使用 LangGraph 将对话 Agent 建模为状态图，通过条件边实现“大模型判断是否调用工具 - 工具执行 - 结果回注 - 再生成回答”的循环流程。
+- 实现角色故事 RAG：对上传文档进行切块、Embedding 和 LanceDB 向量存储，对话时通过工具调用检索 top-k 片段增强回答一致性。
+- 实现 SSE 文本流式输出、WebSocket TTS 音频合成、VAD 语音检测与 ASR 语音识别，支持文本/语音双模态实时交互。
+- 使用 Vue3、Pinia、Vue Router 构建前端单页应用，实现角色创建、聊天窗口、社区动态、点赞收藏评论、无限滚动等功能。
