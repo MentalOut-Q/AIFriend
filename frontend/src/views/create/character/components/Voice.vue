@@ -128,70 +128,72 @@ defineExpose({
 </script>
 
 <template>
-  <fieldset class="fieldset">
-    <label class="label text-base">音色</label>
-    <div class="flex gap-2">
-      <select v-model="myVoice" class="select flex-1">
-        <option
-            v-for="voice in localVoices"
-            :key="voice.id"
-            :id="voice.id"
-            :value="voice.id"
-        >{{ voice.name }}</option>
-      </select>
-      <button type="button" class="btn btn-neutral" @click="showCustomVoice = true">复刻</button>
-    </div>
-  </fieldset>
-
-  <div v-if="showCustomVoice" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-    <div class="bg-base-100 rounded-lg w-100 max-w-[92vw] p-5 shadow-xl">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-bold">复刻音色</h3>
-        <button type="button" class="btn btn-sm btn-circle btn-ghost" @click="closeCustomVoice">✕</button>
+  <div>
+    <fieldset class="fieldset">
+      <label class="label text-base">音色</label>
+      <div class="flex gap-2">
+        <select v-model="myVoice" class="select flex-1">
+          <option
+              v-for="voice in localVoices"
+              :key="voice.id"
+              :id="voice.id"
+              :value="voice.id"
+          >{{ voice.name }}</option>
+        </select>
+        <button type="button" class="btn btn-neutral" @click="showCustomVoice = true">复刻</button>
       </div>
+    </fieldset>
 
-      <label class="fieldset mb-2">
-        <span class="label text-base">音色名称</span>
-        <input v-model="voiceName" class="input w-full" type="text" placeholder="例如：我的声音">
-      </label>
+    <div v-if="showCustomVoice" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div class="bg-base-100 rounded-lg w-100 max-w-[92vw] p-5 shadow-xl">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-bold">复刻音色</h3>
+          <button type="button" class="btn btn-sm btn-circle btn-ghost" @click="closeCustomVoice">✕</button>
+        </div>
 
-      <div class="flex gap-2 my-3">
-        <button
-            v-if="!isRecording"
-            type="button"
-            class="btn btn-outline flex-1"
-            @click="startRecording"
-        >开始录音</button>
-        <button
-            v-else
-            type="button"
-            class="btn btn-error flex-1"
-            @click="stopRecording"
-        >停止录音</button>
-      </div>
+        <label class="fieldset mb-2">
+          <span class="label text-base">音色名称</span>
+          <input v-model="voiceName" class="input w-full" type="text" placeholder="例如：我的声音">
+        </label>
 
-      <audio v-if="recordedAudioUrl" :src="recordedAudioUrl" controls class="w-full mb-3"></audio>
+        <div class="flex gap-2 my-3">
+          <button
+              v-if="!isRecording"
+              type="button"
+              class="btn btn-outline flex-1"
+              @click="startRecording"
+          >开始录音</button>
+          <button
+              v-else
+              type="button"
+              class="btn btn-error flex-1"
+              @click="stopRecording"
+          >停止录音</button>
+        </div>
 
-      <label class="fieldset mb-3">
-        <span class="label text-base">或上传声音文件</span>
-        <input class="file-input w-full" type="file" accept="audio/*" @change="handleFileChange">
-      </label>
+        <audio v-if="recordedAudioUrl" :src="recordedAudioUrl" controls class="w-full mb-3"></audio>
 
-      <label class="label justify-start gap-2 mb-3">
-        <input v-model="agreed" type="checkbox" class="checkbox checkbox-sm">
-        <span>我确认该声音为本人或已获得授权</span>
-      </label>
+        <label class="fieldset mb-3">
+          <span class="label text-base">或上传声音文件</span>
+          <input class="file-input w-full" type="file" accept="audio/*" @change="handleFileChange">
+        </label>
 
-      <p v-if="errorMessage" class="text-sm text-red-500 mb-3">{{ errorMessage }}</p>
+        <label class="label justify-start gap-2 mb-3">
+          <input v-model="agreed" type="checkbox" class="checkbox checkbox-sm">
+          <span>我确认该声音为本人或已获得授权</span>
+        </label>
 
-      <div class="flex justify-end gap-2">
-        <button type="button" class="btn" @click="closeCustomVoice">取消</button>
-        <button
-            type="button"
-            class="btn btn-neutral"
-            :disabled="isSubmitting"
-            @click="submitCustomVoice"
-        >{{ isSubmitting ? '复刻中...' : '创建音色' }}</button>
+        <p v-if="errorMessage" class="text-sm text-red-500 mb-3">{{ errorMessage }}</p>
+
+        <div class="flex justify-end gap-2">
+          <button type="button" class="btn" @click="closeCustomVoice">取消</button>
+          <button
+              type="button"
+              class="btn btn-neutral"
+              :disabled="isSubmitting"
+              @click="submitCustomVoice"
+          >{{ isSubmitting ? '复刻中...' : '创建音色' }}</button>
+        </div>
       </div>
     </div>
   </div>

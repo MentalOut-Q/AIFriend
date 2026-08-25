@@ -22,6 +22,67 @@ from queue import Queue
 import websockets
 
 
+META_SPEECH_PATTERNS = (
+    '我需要查询',
+    '我需要查',
+    '我先查询',
+    '我先查',
+    '让我查询',
+    '让我查',
+    '我去查询',
+    '我去查',
+    '需要查询更多',
+    '根据资料',
+    '根据知识库',
+    '根据角色故事',
+)
+
+
+class LeadingMetaSpeechFilter:
+    def __init__(self):
+        self.buffer = ''
+        self.checked = False
+
+    def feed(self, text):
+        if self.checked:
+            return text
+
+        self.buffer += text
+        sentence_end = -1
+        for i, ch in enumerate(self.buffer):
+            if ch in '。！？.!?\n':
+                sentence_end = i
+                break
+
+        if sentence_end < 0 and len(self.buffer) < 80:
+            return ''
+
+        if sentence_end >= 0:
+            first_sentence = self.buffer[:sentence_end + 1]
+            rest = self.buffer[sentence_end + 1:]
+        else:
+            first_sentence = self.buffer
+            rest = ''
+
+        compact_sentence = ''.join(first_sentence.split())
+        self.checked = True
+        self.buffer = ''
+        if any(pattern in compact_sentence for pattern in META_SPEECH_PATTERNS):
+            return rest.lstrip()
+        return first_sentence + rest
+
+    def flush(self):
+        if self.checked or not self.buffer:
+            return ''
+        text = self.buffer
+        self.buffer = ''
+        self.checked = True
+        compact_text = ''.join(text.split())
+        if any(pattern in compact_text for pattern in META_SPEECH_PATTERNS):
+            return ''
+        return text
+
+
 class SSERenderer(BaseRenderer):
     media_type = 'text/event-stream'
     format = 'txt'
@@ -90,25 +151,21 @@ class MessageChatView(APIView):
         response['X-Accel-Buffering'] = 'no'
         return response
 
-    async def tts_sender(self, app, inputs, mq, ws, task_id):
-        async for msg, metadata in app.astream(inputs, stream_mode="messages"):
-            if isinstance(msg, BaseMessageChunk):
-                if msg.content:
-                    await ws.send(json.dumps({
-                        "header": {
-                            "action": "continue-task",
-                            "task_id": task_id,  # 随机uuid
-                            "streaming": "duplex"
-                        },
-                        "payload": {
-                            "input": {
-                                "text": msg.content,
-                            }
-                        }
-                    }))
-                    mq.put_nowait({'content': msg.content})
-                if hasattr(msg, 'usage_metadata') and msg.usage_metadata:
-                    mq.put_nowait({'usage': msg.usage_metadata})
+    async def send_tts_text(self, ws, task_id, content):
+        await ws.send(json.dumps({
+            "header": {
+                "action": "continue-task",
+                "task_id": task_id,  # 随机uuid
+                "streaming": "duplex"
+            },
+            "payload": {
+                "input": {
+                    "text": content,
+                }
+            }
+        }))
+
+    async def finish_tts_task(self, ws, task_id):
         await ws.send(json.dumps({
             "header": {
                 "action": "finish-task",
@@ -120,16 +177,64 @@ class MessageChatView(APIView):
             }
         }))
 
+    async def tts_sender(self, app, inputs, mq, ws=None, task_id=None):
+        meta_speech_filter = LeadingMetaSpeechFilter()
+        tts_enabled = ws is not None and task_id is not None
+        async for msg, metadata in app.astream(inputs, stream_mode="messages"):
+            if isinstance(msg, BaseMessageChunk):
+                if msg.content:
+                    content = meta_speech_filter.feed(msg.content)
+                    if not content:
+                        continue
+                    mq.put_nowait({'content': content})
+                    if tts_enabled:
+                        try:
+                            await self.send_tts_text(ws, task_id, content)
+                        except Exception as e:
+                            print(f'语音合成发送失败，已继续输出文字：{e}')
+                            tts_enabled = False
+                if hasattr(msg, 'usage_metadata') and msg.usage_metadata:
+                    mq.put_nowait({'usage': msg.usage_metadata})
+        content = meta_speech_filter.flush()
+        if content:
+            mq.put_nowait({'content': content})
+            if tts_enabled:
+                try:
+                    await self.send_tts_text(ws, task_id, content)
+                except Exception as e:
+                    print(f'语音合成发送失败，已继续输出文字：{e}')
+                    tts_enabled = False
+        if tts_enabled:
+            try:
+                await self.finish_tts_task(ws, task_id)
+            except Exception as e:
+                print(f'语音合成结束失败，已继续输出文字：{e}')
+                tts_enabled = False
+        return tts_enabled
+
     async def tts_receiver(self, mq, ws):
+        try:
+            async for msg in ws:
+                if isinstance(msg, bytes):
+                    audio = base64.b64encode(msg).decode('utf-8')
+                    mq.put_nowait({'audio': audio})
+                else:
+                    data = json.loads(msg)
+                    event = data['header']['event']
+                    if event in ['task-finished', 'task-failed']:
+                        break
+        except Exception as e:
+            print(f'语音合成接收失败，已继续输出文字：{e}')
+
+    async def wait_task_started(self, ws):
         async for msg in ws:
-            if isinstance(msg, bytes):
-                audio = base64.b64encode(msg).decode('utf-8')
-                mq.put_nowait({'audio': audio})
-            else:
-                data = json.loads(msg)
-                event = data['header']['event']
-                if event in ['task-finished', 'task-failed']:
-                    break
+            data = json.loads(msg)
+            header = data.get('header', {})
+            event = header.get('event')
+            if event == 'task-started':
+                return
+            if event == 'task-failed':
+                raise RuntimeError(data.get('payload') or header.get('error_message') or data)
 
     async def run_tts_tasks(self, app, inputs, mq, voice_id):
         task_id = uuid.uuid4().hex
@@ -138,7 +243,9 @@ class MessageChatView(APIView):
         headers = {
             "Authorization": f"Bearer {api_key}"
         }
-        async with websockets.connect(wss_url, additional_headers=headers) as ws:
+        try:
+            ws_context = websockets.connect(wss_url, additional_headers=headers)
+            ws = await ws_context.__aenter__()
             await ws.send(json.dumps({
                 "header": {
                     "action": "run-task",
@@ -163,17 +270,27 @@ class MessageChatView(APIView):
                     }
                 }
             }))
-            async for msg in ws:
-                if json.loads(msg)['header']['event'] == 'task-started':
-                    break
-            await asyncio.gather(
-                self.tts_sender(app, inputs, mq, ws, task_id),
-                self.tts_receiver(mq, ws),
-            )
+            await self.wait_task_started(ws)
+        except Exception as e:
+            print(f'语音合成初始化失败，已改为只输出文字：{e}')
+            await self.tts_sender(app, inputs, mq)
+            return
+
+        try:
+            receiver_task = asyncio.create_task(self.tts_receiver(mq, ws))
+            tts_enabled = await self.tts_sender(app, inputs, mq, ws, task_id)
+            if tts_enabled and not receiver_task.done():
+                await receiver_task
+            elif not tts_enabled and not receiver_task.done():
+                receiver_task.cancel()
+        finally:
+            await ws_context.__aexit__(None, None, None)
 
     def work(self, app, inputs, mq, voice_id):
         try:
             asyncio.run(self.run_tts_tasks(app, inputs, mq, voice_id))
+        except Exception as e:
+            mq.put_nowait({'error': f'语音或模型调用失败：{e}'})
         finally:
             mq.put_nowait(None)
 
@@ -195,6 +312,8 @@ class MessageChatView(APIView):
                 yield f'data: {json.dumps({'audio': msg['audio']}, ensure_ascii=False)}\n\n'
             if msg.get('usage', None):
                 full_usage = msg['usage']
+            if msg.get('error', None):
+                yield f'data: {json.dumps({'error': msg['error']}, ensure_ascii=False)}\n\n'
 
         yield 'data: [DONE]\n\n'
         input_tokens = full_usage.get('input_tokens', 0)
@@ -213,4 +332,7 @@ class MessageChatView(APIView):
             total_tokens=total_tokens,
         )
         if Message.objects.filter(friend=friend).count() % 1 == 0:
-            update_memory(friend)
+            try:
+                update_memory(friend)
+            except Exception as e:
+                print(f'记忆更新失败：{e}')

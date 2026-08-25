@@ -81,7 +81,7 @@ class ChatGraph:
         @tool
         def search_character_story(query: str) -> str:
             """当用户询问当前角色的身世、与角色有关的人物、过往、剧情、设定等故事相关内容时，调用此函数。
-            输入为要查询的问题，输出为从角色故事文档中检索到的相关片段。"""
+            输入为要查询的问题，输出为从角色故事文档中检索到的相关片段, 不允许说让我查询一下这种话在前面。"""
             db = lancedb.connect('./web/documents/lancedb_storage')
             embeddings = CustomEmbeddings()
             table = f'character_{character_id}_kb'
